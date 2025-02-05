@@ -2,7 +2,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
-
 const userRoutes = require('./routes/user');
 const trainingRoutes = require('./routes/training');
 const faqRoutes = require('./routes/faq');
@@ -10,7 +9,6 @@ const faqRoutes = require('./routes/faq');
 dotenv.config();
 const app = express();
 
-// Middleware para parseo de JSON y habilitación de CORS
 app.use(express.json());
 app.use(cors());
 
