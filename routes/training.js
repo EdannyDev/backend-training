@@ -5,10 +5,10 @@ const router = express.Router();
 
 // Crear material (solo admin)
 router.post('/', authenticate, authorizeAdmin, async (req, res) => {
-  const { title, description, type, roles, section, module, submodule, fileUrl, originalFileName } = req.body;
+  const { title, description, roles, section, module, submodule, documentUrl, videoUrl, documentName, videoName } = req.body;
 
-  if (!fileUrl || !originalFileName) {
-    return res.status(400).json({ error: 'Debe subir un archivo válido' });
+  if (!documentUrl && !videoUrl) {
+    return res.status(400).json({ error: 'Debe subir al menos un archivo (documento o video)' });
   }
 
   try {
@@ -20,14 +20,19 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
     const newTraining = new Training({
       title,
       description,
-      type,
-      fileUrl,
-      originalFileName,
       roles,
       section: section || '',
       module: module || '',
       submodule: submodule || '',
     });
+
+    if (documentUrl) {
+      newTraining.document = { fileUrl: documentUrl, originalFileName: documentName };
+    }
+
+    if (videoUrl) {
+      newTraining.video = { fileUrl: videoUrl, originalFileName: videoName };
+    }
 
     await newTraining.save();
     res.status(201).json({ message: 'Material de capacitación creado exitosamente', training: newTraining });
@@ -78,25 +83,31 @@ router.get('/:id', authenticate, async (req, res) => {
 // Actualizar material (solo admin)
 router.put('/:id', authenticate, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
-  const { title, description, type, roles, section, module, submodule, fileUrl, originalFileName } = req.body;
+  const { title, description, roles, section, module, submodule, documentUrl, videoUrl, documentName, videoName } = req.body;
 
   try {
     const training = await Training.findById(id);
     if (!training) return res.status(404).json({ error: 'Material de capacitación no encontrado' });
 
+    // Actualizar los campos según la solicitud
     const updatedData = {
       title: title || training.title,
       description: description || training.description,
-      type: type || training.type,
       roles: roles || training.roles,
       section: section !== undefined ? section : training.section,
       module: module !== undefined ? module : training.module,
       submodule: submodule !== undefined ? submodule : training.submodule,
-      fileUrl: fileUrl || training.fileUrl,
-      originalFileName: originalFileName || training.originalFileName,
     };
 
-    const hasChanges = Object.keys(updatedData).some((key) => 
+    if (documentUrl) {
+      updatedData.document = { fileUrl: documentUrl, originalFileName: documentName };
+    }
+
+    if (videoUrl) {
+      updatedData.video = { fileUrl: videoUrl, originalFileName: videoName };
+    }
+
+    const hasChanges = Object.keys(updatedData).some((key) =>
       JSON.stringify(updatedData[key]) !== JSON.stringify(training[key])
     );
 
