@@ -83,13 +83,16 @@ router.get('/:id', authenticate, async (req, res) => {
 // Actualizar material (solo admin)
 router.put('/:id', authenticate, authorizeAdmin, async (req, res) => {
   const { id } = req.params;
-  const { title, description, roles, section, module, submodule, documentUrl, videoUrl, documentName, videoName } = req.body;
+  const { title, description, roles, section, module, submodule, documentUrl, videoUrl, documentName, videoName, deleteDocument, deleteVideo } = req.body;
+
+  if (!documentUrl && !videoUrl && !deleteDocument && !deleteVideo) {
+    return res.status(400).json({ error: 'Debes subir al menos un archivo (documento o video).' });
+  }
 
   try {
     const training = await Training.findById(id);
     if (!training) return res.status(404).json({ error: 'Material de capacitación no encontrado' });
 
-    // Actualizar los campos según la solicitud
     const updatedData = {
       title: title || training.title,
       description: description || training.description,
@@ -99,21 +102,11 @@ router.put('/:id', authenticate, authorizeAdmin, async (req, res) => {
       submodule: submodule !== undefined ? submodule : training.submodule,
     };
 
-    if (documentUrl) {
-      updatedData.document = { fileUrl: documentUrl, originalFileName: documentName };
-    }
+    if (deleteDocument) updatedData.document = null;
+    else if (documentUrl) updatedData.document = { fileUrl: documentUrl, originalFileName: documentName };
 
-    if (videoUrl) {
-      updatedData.video = { fileUrl: videoUrl, originalFileName: videoName };
-    }
-
-    const hasChanges = Object.keys(updatedData).some((key) =>
-      JSON.stringify(updatedData[key]) !== JSON.stringify(training[key])
-    );
-
-    if (!hasChanges) {
-      return res.status(400).json({ error: 'No se realizaron cambios en la capacitación' });
-    }
+    if (deleteVideo) updatedData.video = null;
+    else if (videoUrl) updatedData.video = { fileUrl: videoUrl, originalFileName: videoName };
 
     Object.assign(training, updatedData);
     await training.save();
