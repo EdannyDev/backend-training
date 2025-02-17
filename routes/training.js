@@ -10,7 +10,7 @@ router.post('/', authenticate, authorizeAdmin, async (req, res) => {
   if (!documentUrl && !videoUrl) {
     return res.status(400).json({ error: 'Debe subir al menos un archivo (documento o video)' });
   }
-
+  //Verificar si existe un material con el mismo título, sección y módulo
   try {
     const existingTraining = await Training.findOne({ title, section, module });
     if (existingTraining) {
