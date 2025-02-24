@@ -209,6 +209,10 @@ router.put('/profile', authenticate, async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
+    if (email && user.role !== 'admin') {
+      return res.status(403).json({ error: 'No tienes permiso para cambiar tu correo electrónico' });
+    }
+
     if (password) {
       const passwordValidation = validatePassword(password);
       if (!passwordValidation.valid) {
@@ -218,7 +222,7 @@ router.put('/profile', authenticate, async (req, res) => {
     }
 
     user.name = name || user.name;
-    user.email = email || user.email;
+    if (user.role === 'admin' && email) user.email = email;
     await user.save();
 
     res.json({ message: 'Usuario actualizado' });
