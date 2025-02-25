@@ -47,7 +47,7 @@ router.post('/register', async (req, res) => {
     await newUser.save();
 
     // Generar token
-    const token = jwt.sign({ user: { id: newUser._id } }, process.env.JWT_SECRET, { expiresIn: '10s' });
+    const token = jwt.sign({ user: { id: newUser._id } }, process.env.JWT_SECRET, { expiresIn: '10h' });
     res.status(201).json({ token });
   } catch (error) {
     console.error("Error al registrar usuario:", error);
@@ -68,7 +68,7 @@ router.post('/login', async (req, res) => {
     if (!isMatch) return res.status(400).json({ error: 'Contraseña incorrecta' });
 
     // Generar token
-    const token = jwt.sign({ user: { id: user._id, role: user.role } }, process.env.JWT_SECRET, { expiresIn: '10s' });
+    const token = jwt.sign({ user: { id: user._id, role: user.role } }, process.env.JWT_SECRET, { expiresIn: '10h' });
     res.json({ token, role: user.role });
   } catch {
     res.status(500).json({ error: 'Error del servidor' });
