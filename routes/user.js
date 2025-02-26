@@ -1,7 +1,6 @@
 const express = require('express');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
-const sendMail = require('../utils/mailer');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const { authenticate, authorizeAdmin, validateObjectId } = require('../middlewares/auth');
@@ -84,21 +83,14 @@ router.post('/forgot-password', async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-    // Generar token de restablecimiento
+    // Generar token temporal
     const resetToken = crypto.randomBytes(32).toString('hex');
     user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 minutos
+    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
     await user.save();
 
-    // Enlace para el usuario
-    const resetLink = `https://nyx-mentor-softy.vercel.app/resetPassword?token=${resetToken}`;
-
-    // Enviar correo con el enlace
-    await sendMail(user.email, 'Restablecer contraseña', `Haz clic aquí para restablecer tu contraseña: ${resetLink}`);
-
-    res.json({ message: 'Correo de restablecimiento enviado' });
-  } catch (error) {
-    console.error('Error en forgot-password:', error);
+    res.json({ message: 'Solicitud de restablecimiento enviada', resetToken });
+  } catch {
     res.status(500).json({ error: 'Error del servidor' });
   }
 });
@@ -115,20 +107,18 @@ router.post('/reset-password', async (req, res) => {
   try {
     const user = await User.findOne({
       resetPasswordToken: token,
-      resetPasswordExpires: { $gt: Date.now() }, // Verifica que el token no haya expirado
+      resetPasswordExpires: { $gt: Date.now() },
     });
 
     if (!user) return res.status(400).json({ error: 'Token inválido o expirado' });
 
-    // Guardar la nueva contraseña y eliminar el token usado
     user.password = await bcrypt.hash(newPassword, 10);
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
 
     res.json({ message: 'Contraseña restablecida con éxito' });
-  } catch (error) {
-    console.error('Error al restablecer contraseña:', error);
+  } catch {
     res.status(500).json({ error: 'Error del servidor' });
   }
 });
