@@ -91,7 +91,7 @@ router.post('/forgot-password', async (req, res) => {
     await user.save();
 
     // Enlace para el usuario
-    const resetLink = `https://nyx-mentor-softy.vercel.app/reset-password?token=${resetToken}`;
+    const resetLink = `https://nyx-mentor-softy.vercel.app/resetPassword?token=${resetToken}`;
 
     // Enviar correo con el enlace
     await sendMail(user.email, 'Restablecer contraseña', `Haz clic aquí para restablecer tu contraseña: ${resetLink}`);
