@@ -2,9 +2,11 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const userRoutes = require('./routes/user');
-const trainingRoutes = require('./routes/training');
+const evaluationRoutes = require('./routes/evaluation');
 const faqRoutes = require('./routes/faq');
+const progressRoutes = require('./routes/progress');
+const trainingRoutes = require('./routes/training');
+const userRoutes = require('./routes/user');
 
 dotenv.config();
 const app = express();
@@ -18,9 +20,11 @@ mongoose.connect(process.env.MONGODB_URI)
   .catch(() => console.error('Error al conectar a MongoDB'));
 
 // Rutas de la API
-app.use('/api/users', userRoutes);
-app.use('/api/training', trainingRoutes);
+app.use('/api/evaluations', evaluationRoutes);
 app.use('/api/faqs', faqRoutes);
+app.use('/api/progress', progressRoutes);
+app.use('/api/trainings', trainingRoutes);
+app.use('/api/users', userRoutes);
 
 // Configuración del servidor
 const PORT = process.env.PORT || 5000;
