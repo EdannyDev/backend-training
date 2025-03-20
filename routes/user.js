@@ -7,7 +7,7 @@ const { authenticate, authorizeAdmin, validateObjectId } = require('../middlewar
 const router = express.Router();
 
 // Expresión regular para validar la contraseña
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$/;
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!\"#$%&'()*+,-./:;<=>?@[\\\]^_{|}~]).{8,20}$/;
 
 // Validar la contraseña antes de realizar cualquier acción con ella
 const validatePassword = (password) => {
@@ -18,7 +18,7 @@ const validatePassword = (password) => {
 };
 
 // Expresión regular para validar el código de seguridad
-const securityCodeRegex = /^(?=.*[a-zA-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{6,20}$/;
+const securityCodeRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!\"#$%&'()*+,-./:;<=>?@[\\\]^_{|}~]).{6,20}$/;
 
 // Función para validar el código de seguridad
 const validateSecurityCode = (code) => {
