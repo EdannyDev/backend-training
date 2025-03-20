@@ -41,6 +41,81 @@ const assignEvaluation = async (userId, role) => {
     }
 };
 
+// Obtener el progreso de todos los usuarios (excluyendo admin)
+router.get('/all-progress', authenticate, async (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Acceso denegado.' });
+        }
+
+        const allProgress = await Progress.find()
+            .populate('userId', 'name role')
+            .populate('trainingId', 'title');
+        const filteredProgress = allProgress.filter(progress => progress.userId.role !== 'admin');
+        const formattedProgress = filteredProgress.reduce((acc, progress) => {
+            const { userId, trainingId, progress: progressValue, status, completed } = progress;
+
+            if (!acc[userId._id]) {
+                acc[userId._id] = {
+                    _id: userId._id,
+                    name: userId.name,
+                    role: userId.role,
+                    trainings: []
+                };
+            }
+
+            acc[userId._id].trainings.push({
+                _id: progress._id,
+                trainingId: trainingId._id,
+                trainingTitle: trainingId.title,
+                progress: progressValue,
+                status,
+                completed
+            });
+
+            return acc;
+        }, {});
+
+        res.json(Object.values(formattedProgress));
+    } catch (error) {
+        res.status(500).json({ error: 'Error al obtener el progreso de todos los usuarios' });
+    }
+});
+
+// Obtener usuarios que completaron todas sus capacitaciones al 100% (solo admin)
+router.get('/all-completed', authenticate, async (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Acceso denegado.' });
+        }
+        const users = await User.find({ role: { $ne: 'admin' } });
+
+        let completedUsers = [];
+
+        for (const user of users) {
+            const requiredTrainings = await Training.find({ roles: user.role });
+            const userProgress = await Progress.find({ userId: user._id });
+
+            const allCompleted = requiredTrainings.every(training => 
+                userProgress.some(progress => 
+                    progress.trainingId.equals(training._id) && 
+                    progress.status === 'completado' &&
+                    progress.progress === 100 &&
+                    progress.completed === true
+                )
+            );
+
+            if (allCompleted) {
+                completedUsers.push({ userId: user._id, name: user.name, role: user.role });
+            }
+        }
+
+        res.json(completedUsers);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al obtener los usuarios que completaron todas sus capacitaciones' });
+    }
+});
+
 // Obtener progreso de un usuario
 router.get('/view/:userId', authenticate, async (req, res) => {
     try {

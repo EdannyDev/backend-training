@@ -7,22 +7,40 @@ const sendMail = require('../utils/sendMail');
 const moment = require('moment-timezone');
 const meridaTimezone = 'America/Merida';
 
-// Función para obtener los horarios laborales del día actual
+// Función para verificar si es un día hábil (Lunes a Viernes) en la zona horaria de Mérida
+const isBusinessDay = () => {
+    const currentDay = moment.tz(meridaTimezone).day();
+    return currentDay >= 1 && currentDay <= 5;
+};
+
+// Función para obtener los horarios laborales en la zona horaria de Mérida
 const getWorkHours = () => {
     const currentTime = moment.tz(meridaTimezone);
     const today = currentTime.format('YYYY-MM-DD');
 
     return {
-        workStartTime: moment.tz(`${today} 08:30`, 'YYYY-MM-DD HH:mm', meridaTimezone).utc(),
-        workEndTime: moment.tz(`${today} 18:30`, 'YYYY-MM-DD HH:mm', meridaTimezone).utc()
+        workStartTime: moment.tz(`${today} 08:30`, 'YYYY-MM-DD HH:mm', meridaTimezone),
+        workEndTime: moment.tz(`${today} 18:30`, 'YYYY-MM-DD HH:mm', meridaTimezone)
     };
 };
 
-// Ruta para enviar respuestas y calcular score
+// Ruta para enviar respuestas y calcular el score
 router.post('/submit', authenticate, async (req, res) => {
     try {
         const userId = req.user.id;
         const { answers } = req.body;
+        const currentTime = moment.tz(meridaTimezone);
+        const { workStartTime, workEndTime } = getWorkHours();
+
+        if (!isBusinessDay()) {
+            return res.status(400).json({ error: 'Las evaluaciones solo se pueden presentar de lunes a viernes.' });
+        }
+
+        if (currentTime.isBefore(workStartTime) || currentTime.isAfter(workEndTime)) {
+            return res.status(400).json({
+                error: 'Las evaluaciones solo se pueden presentar dentro del horario laboral (8:30 AM - 6:30 PM, hora de Mérida).'
+            });
+        }
 
         if (!Array.isArray(answers)) {
             return res.status(400).json({ error: 'El formato de respuestas es inválido' });
@@ -31,6 +49,7 @@ router.post('/submit', authenticate, async (req, res) => {
         if (req.user.role === 'admin') {
             return res.status(403).json({ error: 'El administrador no puede presentar evaluaciones.' });
         }
+
         const existingEvaluation = await Evaluation.findOne({ userId }).populate('questions');
 
         if (!existingEvaluation) {
@@ -40,6 +59,7 @@ router.post('/submit', authenticate, async (req, res) => {
         if (existingEvaluation.status !== 'pendiente') {
             return res.status(400).json({ error: 'La evaluación ya fue presentada.' });
         }
+
         let correctAnswers = 0;
 
         existingEvaluation.questions.forEach((question) => {
@@ -135,9 +155,20 @@ router.get('/assigned', authenticate, async (req, res) => {
 // Ruta para intentar nuevamente la evaluación si fue fallada
 router.post('/retry', authenticate, async (req, res) => {
     try {
-        const { workStartTime, workEndTime } = getWorkHours();
         const userId = req.user.id;
-        const currentTime = moment().utc();
+        const currentTime = moment.tz(meridaTimezone);
+        const { workStartTime, workEndTime } = getWorkHours();
+
+        if (!isBusinessDay()) {
+            return res.status(400).json({ error: 'Solo puedes reintentar la evaluación de lunes a viernes.' });
+        }
+
+        if (currentTime.isBefore(workStartTime) || currentTime.isAfter(workEndTime)) {
+            return res.status(400).json({
+                error: 'Los intentos solo pueden realizarse dentro del horario laboral (8:30 AM a 6:30 PM, hora de Mérida).'
+            });
+        }
+
         const hasApproved = await Evaluation.findOne({ userId, status: 'aprobado' });
 
         if (hasApproved) {
@@ -147,6 +178,7 @@ router.post('/retry', authenticate, async (req, res) => {
         if (req.user.role === 'admin') {
             return res.status(403).json({ error: 'El administrador no puede intentar la evaluación.' });
         }
+
         let evaluation = await Evaluation.findOne({ userId }).populate('questions');
 
         if (!evaluation) {
@@ -157,19 +189,13 @@ router.post('/retry', authenticate, async (req, res) => {
             return res.status(400).json({ error: 'Solo puedes reintentar evaluaciones fallidas.' });
         }
 
-        if (currentTime.isBefore(workStartTime) || currentTime.isAfter(workEndTime)) {
-            return res.status(400).json({
-                error: 'Los intentos solo pueden realizarse durante la jornada laboral (8:30 AM a 6:30 PM).'
-            });
-        }
-
         if (evaluation.attempts >= 3) {
             return res.status(400).json({
                 error: 'Has alcanzado el límite de intentos para esta evaluación en la jornada laboral actual.'
             });
         }
 
-        const lastAttemptTime = moment(evaluation.updatedAt).utc();
+        const lastAttemptTime = moment(evaluation.updatedAt).tz(meridaTimezone);
         const timeSinceLastAttempt = currentTime.diff(lastAttemptTime, 'milliseconds');
         const timeLimit = 1 * 60 * 1000;
         const remainingTime = timeLimit - timeSinceLastAttempt;

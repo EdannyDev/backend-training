@@ -17,13 +17,29 @@ const validatePassword = (password) => {
   return { valid: true };
 };
 
+// Expresión regular para validar el código de seguridad
+const securityCodeRegex = /^(?=.*[a-zA-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{6,20}$/;
+
+// Función para validar el código de seguridad
+const validateSecurityCode = (code) => {
+  if (!securityCodeRegex.test(code)) {
+    return { valid: false, message: 'El código debe tener entre 6 y 20 caracteres, al menos una letra y un número.' };
+  }
+  return { valid: true };
+};
+
 // Registrar un nuevo usuario
 router.post('/register', async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, securityCode } = req.body;
 
   const passwordValidation = validatePassword(password);
   if (!passwordValidation.valid) {
     return res.status(400).json({ error: passwordValidation.message });
+  }
+
+  const codeValidation = validateSecurityCode(securityCode);
+  if (!codeValidation.valid) {
+    return res.status(400).json({ error: codeValidation.message });
   }
 
   try {
@@ -40,17 +56,18 @@ router.post('/register', async (req, res) => {
     else if (email.endsWith('@managerZN.com')) role = 'gerente_zona';
     else return res.status(400).json({ error: 'Email no válido para asignar un rol' });
 
-    // Encriptar la contraseña
+    // Encriptar contraseña y código de seguridad
     const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedSecurityCode = await bcrypt.hash(securityCode, 10);
 
-    const newUser = new User({ name, email, password: hashedPassword, role });
+    const newUser = new User({ name, email, password: hashedPassword, securityCode: hashedSecurityCode, role });
     await newUser.save();
 
     // Generar token
     const token = jwt.sign({ user: { id: newUser._id } }, process.env.JWT_SECRET, { expiresIn: '10h' });
     res.status(201).json({ token });
   } catch (error) {
-    console.error("Error al registrar usuario:", error);
+    console.error('Error al registrar usuario:', error);
     res.status(500).json({ error: 'Error del servidor' });
   }
 });
@@ -77,11 +94,14 @@ router.post('/login', async (req, res) => {
 
 // Solicitar restablecimiento de contraseña
 router.post('/forgot-password', async (req, res) => {
-  const { email } = req.body;
+  const { email, securityCode } = req.body;
 
   try {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const isCodeValid = await bcrypt.compare(securityCode, user.securityCode);
+    if (!isCodeValid) return res.status(400).json({ error: 'Código de seguridad incorrecto' });
 
     // Generar token temporal
     const resetToken = crypto.randomBytes(32).toString('hex');
@@ -203,31 +223,45 @@ router.get('/profile', authenticate, async (req, res) => {
 
 // Actualizar perfil del usuario autenticado
 router.put('/profile', authenticate, async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, newPassword, newSecurityCode } = req.body;
 
   try {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-    if (email && user.role !== 'admin') {
-      return res.status(403).json({ error: 'No tienes permiso para cambiar tu correo electrónico' });
+    if (newPassword && await bcrypt.compare(newPassword, user.password)) {
+      return res.status(400).json({ error: 'La nueva contraseña no puede ser igual a la actual' });
     }
 
-    if (password) {
-      const passwordValidation = validatePassword(password);
+    if (newSecurityCode && await bcrypt.compare(newSecurityCode, user.securityCode)) {
+      return res.status(400).json({ error: 'El nuevo código de seguridad no puede ser igual al actual' });
+    }
+
+    if (newPassword) {
+      const passwordValidation = validatePassword(newPassword);
       if (!passwordValidation.valid) {
         return res.status(400).json({ error: passwordValidation.message });
       }
-      user.password = await bcrypt.hash(password, 10);
+      user.password = await bcrypt.hash(newPassword, 10);
     }
 
-    user.name = name || user.name;
-    if (user.role === 'admin' && email) user.email = email;
+    if (newSecurityCode) {
+      const codeValidation = validateSecurityCode(newSecurityCode);
+      if (!codeValidation.valid) {
+        return res.status(400).json({ error: codeValidation.message });
+      }
+      user.securityCode = await bcrypt.hash(newSecurityCode, 10);
+    }
+
+    if (name) user.name = name;
+    if (email) user.email = email;
+
     await user.save();
 
-    res.json({ message: 'Usuario actualizado' });
-  } catch {
-    res.status(500).json({ error: 'Error del servidor' });
+    res.json({ message: 'Usuario actualizado correctamente' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error del servidor al actualizar el perfil' });
   }
 });
 
