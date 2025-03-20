@@ -147,7 +147,9 @@ router.post('/reset-password', async (req, res) => {
 router.get('/list', authenticate, authorizeAdmin, async (req, res) => {
   try {
     // No permitir que el admin vea su propio perfil
-    const users = await User.find({ _id: { $ne: req.user.id } }).select('-password');
+    const users = await User.find({ _id: { $ne: req.user.id } })
+      .select('-password -securityCode -resetPasswordToken -resetPasswordExpires');
+    
     res.json(users);
   } catch {
     res.status(500).json({ error: 'Error del servidor' });
@@ -157,7 +159,9 @@ router.get('/list', authenticate, authorizeAdmin, async (req, res) => {
 // Obtener un usuario por ID (solo admin)
 router.get('/list/:id', authenticate, authorizeAdmin, validateObjectId, async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select('-password');
+    const user = await User.findById(req.params.id)
+      .select('-password -securityCode -resetPasswordToken -resetPasswordExpires');
+    
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
     res.json(user);
