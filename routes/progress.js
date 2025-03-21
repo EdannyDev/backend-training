@@ -12,9 +12,19 @@ const hasAccessToTraining = (user, training) => {
     return training.roles.includes(user.role);
 };
 
-// Asignar preguntas en la evaluación en base al rol del usuario
+// Asignar una evaluación al usuario si ha completado todas sus capacitaciones
 const assignEvaluation = async (userId, role) => {
-    try {        
+    try {
+        let existingEvaluation = await Evaluation.findOne({ userId });
+
+        if (existingEvaluation) {
+            if (existingEvaluation.status === 'aprobado') {
+                await Evaluation.deleteOne({ _id: existingEvaluation._id });
+            } else {
+                return;
+            }
+        }
+
         const questions = await Question.find({ roles: role });
 
         if (!questions || questions.length === 0) {
@@ -23,19 +33,14 @@ const assignEvaluation = async (userId, role) => {
         }
 
         const shuffledQuestions = [...questions].sort(() => Math.random() - 0.5).slice(0, 5);
+        const newEvaluation = new Evaluation({
+            userId,
+            questions: shuffledQuestions.map(q => q._id),
+            score: 0,
+            status: 'pendiente'
+        });
 
-        let evaluation = await Evaluation.findOne({ userId });
-
-        if (!evaluation) {
-            evaluation = new Evaluation({
-                userId,
-                questions: shuffledQuestions.map(q => q._id),
-                score: 0,
-                status: 'pendiente'
-            });
-
-            await evaluation.save();
-        }
+        await newEvaluation.save();
     } catch (error) {
         console.error("Error asignando evaluación:", error);
     }
@@ -268,21 +273,21 @@ router.post('/progress', authenticate, async (req, res) => {
         }
         await session.save();
 
-        const requiredTrainings = await Training.find({ roles: req.user.role });
-        const userProgress = await Progress.find({ userId });
+       const requiredTrainings = await Training.find({ roles: req.user.role });
+       const userProgress = await Progress.find({ userId });
 
-        const allCompleted = requiredTrainings.every(training => 
-            userProgress.some(progress => 
-                progress.trainingId.equals(training._id) && 
-                progress.status === 'completado' &&
-                progress.progress === 100 &&
-                progress.completed === true
-            )
-        );
+       const allCompleted = requiredTrainings.every(training => 
+           userProgress.some(progress => 
+               progress.trainingId.equals(training._id) && 
+               progress.status === 'completado' &&
+               progress.progress === 100 &&
+               progress.completed === true
+           )
+       );
 
-        if (allCompleted) {
-            await assignEvaluation(userId, req.user.role);
-        }
+       if (allCompleted) {
+           await assignEvaluation(userId, req.user.role);
+       }
         res.json({ message: 'Progreso guardado correctamente', progress: session.progress, completed: session.completed });
     } catch (error) {
         res.status(500).json({ error: 'Error al registrar el progreso' });
