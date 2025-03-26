@@ -197,12 +197,13 @@ router.post('/retry', authenticate, async (req, res) => {
 
         const lastAttemptTime = moment(evaluation.updatedAt).tz(meridaTimezone);
         const timeSinceLastAttempt = currentTime.diff(lastAttemptTime, 'milliseconds');
-        const timeLimit = 1 * 60 * 1000;
+        const timeLimit = 5 * 60 * 1000;
         const remainingTime = timeLimit - timeSinceLastAttempt;
 
+        const remainingMinutes = Math.ceil(remainingTime / (60 * 1000));
         if (timeSinceLastAttempt < timeLimit) {
             return res.status(400).json({
-                error: `Debes esperar ${Math.ceil(remainingTime / 1000)} segundos para intentar nuevamente.`,
+                error: `Podrás intentarlo nuevamente en ${remainingMinutes} minutos.`,
                 remainingTime
             });
         }

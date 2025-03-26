@@ -1,5 +1,6 @@
 const express = require('express');
 const Training = require('../models/training');
+const Progress = require('../models/progress');
 const { authenticate, authorizeAdmin } = require('../middlewares/auth');
 const router = express.Router();
 
@@ -123,9 +124,13 @@ router.delete('/:id', authenticate, authorizeAdmin, async (req, res) => {
 
   try {
     const deletedTraining = await Training.findByIdAndDelete(id);
-    if (!deletedTraining) return res.status(404).json({ error: 'Material de capacitación no encontrado' });
+    if (!deletedTraining) {
+      return res.status(404).json({ error: 'Material de capacitación no encontrado' });
+    }
 
-    res.json({ message: 'Material de capacitación eliminado exitosamente' });
+    await Progress.deleteMany({ trainingId: id });
+
+    res.json({ message: 'Material de capacitación y progresos eliminados exitosamente' });
   } catch (err) {
     res.status(500).json({ error: 'Error al eliminar el material de capacitación' });
   }
