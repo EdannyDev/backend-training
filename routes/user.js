@@ -47,14 +47,20 @@ router.post('/register', async (req, res) => {
     const userExists = await User.findOne({ email });
     if (userExists) return res.status(400).json({ error: 'El usuario ya existe' });
 
-    // Asignar rol según el dominio del email
-    let role = '';
-    if (email.endsWith('@adminRH.com')) role = 'admin';
-    else if (email.endsWith('@adviser.com')) role = 'asesor';
-    else if (email.endsWith('@adviserJR.com')) role = 'asesorJR';
-    else if (email.endsWith('@managerBR.com')) role = 'gerente_sucursal';
-    else if (email.endsWith('@managerZN.com')) role = 'gerente_zona';
-    else return res.status(400).json({ error: 'Email no válido para asignar un rol' });
+    // Asignación de rol en el sistema
+    const roles = {
+      'training@adminRH.com': 'admin',
+      'training@adviser.com': 'asesor',
+      'training@adviserJR.com': 'asesorJR',
+      'training@managerBR.com': 'gerente_sucursal',
+      'training@managerZN.com': 'gerente_zona'
+    };
+
+    const role = roles[email];
+
+    if (!role) {
+      return res.status(400).json({ error: 'Email no válido para asignar un rol' });
+    }
 
     // Encriptar contraseña y código de seguridad
     const hashedPassword = await bcrypt.hash(password, 10);
