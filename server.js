@@ -10,7 +10,7 @@ const userRoutes = require('./routes/user');
 
 const corsOptions = {
   origin: function (origin, callback) {
-    const allowedOrigins = ['http://10.147.20.174', 'http://10.147.20.13'];
+    const allowedOrigins = ['https://training-app-lovat.vercel.app', 'http://10.147.20.174', 'http://10.147.20.13'];
 
     if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
       callback(null, true);
