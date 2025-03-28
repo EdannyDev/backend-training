@@ -43,30 +43,26 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    // Verificar si el usuario ya existe
-    const userExists = await User.findOne({ email });
+    const institutionalEmail = email.replace('@', '.cap@');
+
+    // Verificar si el usuario ya existe con el email modificado
+    const userExists = await User.findOne({ email: institutionalEmail });
     if (userExists) return res.status(400).json({ error: 'El usuario ya existe' });
 
-    // Asignación de rol en el sistema
-    const roles = {
-      'training@adminRH.com': 'admin',
-      'training@adviser.com': 'asesor',
-      'training@adviserJR.com': 'asesorJR',
-      'training@managerBR.com': 'gerente_sucursal',
-      'training@managerZN.com': 'gerente_zona'
-    };
-
-    const role = roles[email];
-
-    if (!role) {
-      return res.status(400).json({ error: 'Email no válido para asignar un rol' });
-    }
+    // Asignar rol según el dominio del email
+    let role = '';
+    if (email.endsWith('@adminRH.com')) role = 'admin';
+    else if (email.endsWith('@adviser.com')) role = 'asesor';
+    else if (email.endsWith('@adviserJR.com')) role = 'asesorJR';
+    else if (email.endsWith('@managerBR.com')) role = 'gerente_sucursal';
+    else if (email.endsWith('@managerZN.com')) role = 'gerente_zona';
+    else return res.status(400).json({ error: 'Email no válido para asignar un rol' });
 
     // Encriptar contraseña y código de seguridad
     const hashedPassword = await bcrypt.hash(password, 10);
     const hashedSecurityCode = await bcrypt.hash(securityCode, 10);
 
-    const newUser = new User({ name, email, password: hashedPassword, securityCode: hashedSecurityCode, role });
+    const newUser = new User({ name, email: institutionalEmail, password: hashedPassword, securityCode: hashedSecurityCode, role });
     await newUser.save();
 
     // Generar token
@@ -83,7 +79,9 @@ router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email });
+    const institutionalEmail = email.replace('@', '.cap@');
+
+    const user = await User.findOne({ email: institutionalEmail });
     if (!user) return res.status(400).json({ error: 'Usuario no encontrado' });
 
     // Comparar las contraseñas
@@ -103,7 +101,9 @@ router.post('/forgot-password', async (req, res) => {
   const { email, securityCode } = req.body;
 
   try {
-    const user = await User.findOne({ email });
+    const institutionalEmail = email.replace('@', '.cap@');
+
+    const user = await User.findOne({ email: institutionalEmail });
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
     const isCodeValid = await bcrypt.compare(securityCode, user.securityCode);
@@ -188,14 +188,35 @@ router.put('/update/:id', authenticate, authorizeAdmin, validateObjectId, async 
     if (user._id.toString() === req.user.id.toString()) {
       return res.status(400).json({ error: 'No puedes actualizar tus propios datos desde esta ruta' });
     }
+    let validEmail = false;
 
-    user.name = name || user.name;
-    user.email = email || user.email;
-    user.role = role || user.role;
+    if (role === 'admin' && email.endsWith('@adminRH.com')) {
+      validEmail = true;
+    } else if (role === 'asesor' && email.endsWith('@adviser.com')) {
+      validEmail = true;
+    } else if (role === 'asesorJR' && email.endsWith('@adviserJR.com')) {
+      validEmail = true;
+    } else if (role === 'gerente_sucursal' && email.endsWith('@managerBR.com')) {
+      validEmail = true;
+    } else if (role === 'gerente_zona' && email.endsWith('@managerZN.com')) {
+      validEmail = true;
+    }
+
+    if (!validEmail) {
+      return res.status(400).json({ error: 'El email no coincide con el rol asignado' });
+    }
+    if (!email.includes('.cap@')) {
+      user.email = email.replace('@', '.cap@');
+    } else {
+      user.email = email;
+    }
+    if (name) user.name = name;
+    if (role) user.role = role;
     await user.save();
 
     res.json({ message: 'Usuario actualizado' });
-  } catch {
+  } catch (error) {
+    console.error('Error al actualizar usuario:', error);
     res.status(500).json({ error: 'Error del servidor' });
   }
 });
@@ -264,7 +285,13 @@ router.put('/profile', authenticate, async (req, res) => {
     }
 
     if (name) user.name = name;
-    if (email) user.email = email;
+    if (email) {
+      if (!email.includes('.cap@')) {
+        user.email = email.replace('@', '.cap@');
+      } else {
+        user.email = email;
+      }
+    }
 
     await user.save();
 
