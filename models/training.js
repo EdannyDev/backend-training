@@ -22,6 +22,4 @@ const trainingSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-const Training = mongoose.model('Training', trainingSchema);
-
-module.exports = Training;
+module.exports = mongoose.model('Training', trainingSchema);
