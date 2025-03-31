@@ -28,7 +28,7 @@ async function sendMail(user, score) {
 
     const mailOptions = {
       from: `"Nyx-Mentor"`,
-      to: 'edanuc15@gmail.com',
+      to: 'recursoshumanos@ultrahogar.net',
       subject: 'Evaluación Aprobada',
       text: `El usuario ${user.name} con el correo ${user.email} aprobó su evaluación con una calificación de ${score} puntos.`,
       html: `
