@@ -3,6 +3,8 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const Progress = require('../models/progress');
+const Evaluation = require('../models/evaluation');
 const { authenticate, authorizeAdmin, validateObjectId } = require('../middlewares/auth');
 const router = express.Router();
 
@@ -224,17 +226,17 @@ router.put('/update/:id', authenticate, authorizeAdmin, validateObjectId, async 
 // Eliminar un usuario (solo admin)
 router.delete('/delete/:id', authenticate, authorizeAdmin, validateObjectId, async (req, res) => {
   const { id } = req.params;
-
-  // No permitir que el admin elimine su propia cuenta
   if (id === req.user.id.toString()) {
     return res.status(400).json({ error: 'No puedes eliminar tu propia cuenta' });
   }
-
   try {
     const user = await User.findByIdAndDelete(id);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-    res.json({ message: 'Usuario eliminado' });
+    await Progress.deleteMany({ userId: id });
+    await Evaluation.deleteMany({ userId: id });
+
+    res.json({ message: 'Usuario, progreso y evaluaciones eliminados correctamente' });
   } catch {
     res.status(500).json({ error: 'Error del servidor' });
   }
