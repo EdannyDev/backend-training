@@ -6,6 +6,7 @@ const EvaluationSchema = new mongoose.Schema({
   score: { type: Number, required: true },
   status: { type: String, enum: ['pendiente', 'aprobado', 'fallado'], default: 'pendiente' },
   attempts: { type: Number, default: 0 },
+  retryTimestamp: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 

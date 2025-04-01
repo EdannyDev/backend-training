@@ -152,12 +152,44 @@ router.get('/assigned', authenticate, async (req, res) => {
     }
 });
 
+//Obtener temporizador de espera entre intentos
+router.get('/retry-time', authenticate, async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        if (req.user.role === 'admin') {
+            return res.status(403).json({ error: 'El administrador no puede realizar evaluaciones.' });
+        }
+
+        const evaluation = await Evaluation.findOne({ userId });
+
+        if (!evaluation || !evaluation.retryTimestamp) {
+            return res.json({ retryTimestamp: null });
+        }
+
+        const currentTime = moment().tz(meridaTimezone);
+
+        if (currentTime.isAfter(evaluation.retryTimestamp)) {
+            evaluation.retryTimestamp = null;
+            await evaluation.save();
+            return res.json({ retryTimestamp: null });
+        }
+
+        res.json({ retryTimestamp: evaluation.retryTimestamp });
+
+    } catch (error) {
+        console.error('Error en /retry-time:', error);
+        res.status(500).json({ error: 'Error al obtener el tiempo de reintento' });
+    }
+});
+
 // Ruta para intentar nuevamente la evaluación si fue fallada
 router.post('/retry', authenticate, async (req, res) => {
     try {
         const userId = req.user.id;
         const currentTime = moment.tz(meridaTimezone);
         const { workStartTime, workEndTime } = getWorkHours();
+        const waitTime = 5 * 60 * 1000;
 
         if (!isBusinessDay()) {
             return res.status(400).json({ error: 'Solo puedes reintentar la evaluación de lunes a viernes.' });
@@ -196,14 +228,25 @@ router.post('/retry', authenticate, async (req, res) => {
         }
 
         const lastAttemptTime = moment(evaluation.updatedAt).tz(meridaTimezone);
-        const timeSinceLastAttempt = currentTime.diff(lastAttemptTime, 'milliseconds');
-        const timeLimit = 5 * 60 * 1000;
-        const remainingTime = timeLimit - timeSinceLastAttempt;
+        const todayStart = workStartTime.clone().startOf('day');
+        const todayEnd = workEndTime.clone().endOf('day');
 
-        const remainingMinutes = Math.ceil(remainingTime / (60 * 1000));
-        if (timeSinceLastAttempt < timeLimit) {
+        if (!lastAttemptTime.isBetween(todayStart, todayEnd, null, '[]')) {
+            evaluation.attempts = 0;
+        }
+
+        if (evaluation.attempts >= 3) {
             return res.status(400).json({
-                error: `Podrás intentarlo nuevamente en ${remainingMinutes} minutos.`,
+                error: 'Has alcanzado el límite de intentos para hoy. Inténtalo en el siguiente día hábil.'
+            });
+        }
+
+        const timeSinceLastAttempt = currentTime.diff(lastAttemptTime, 'milliseconds');
+        const remainingTime = waitTime - timeSinceLastAttempt;
+
+        if (timeSinceLastAttempt < waitTime) {
+            return res.status(400).json({
+                error: `Debes esperar ${Math.ceil(remainingTime / (60 * 1000))} minutos antes de intentar de nuevo.`,
                 remainingTime
             });
         }
