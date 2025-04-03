@@ -25,6 +25,11 @@ mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Conexión a MongoDB exitosa'))
   .catch(() => console.error('Error al conectar a MongoDB'));
 
+// Ruta inicial del backend
+app.get('/', async (req, res) => {
+  res.json({ message: 'Bienvenido al servidor backend de Nyx-Mentor' });
+});
+
 // Rutas de la API
 app.use('/api/evaluations', evaluationRoutes);
 app.use('/api/faqs', faqRoutes);

@@ -158,7 +158,7 @@ router.get('/retry-time', authenticate, async (req, res) => {
         const userId = req.user.id;
 
         if (req.user.role === 'admin') {
-            return res.status(403).json({ error: 'El administrador no puede realizar evaluaciones.' });
+            return res.json({ isAdmin: true, retryTimestamp: null });
         }
 
         const evaluation = await Evaluation.findOne({ userId });
