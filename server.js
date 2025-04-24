@@ -11,14 +11,8 @@ const userRoutes = require('./routes/user');
 dotenv.config();
 const app = express();
 
-const corsOptions = {
-  origin: process.env.FRONTEND_URL,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-};
-
 app.use(express.json());
-app.use(cors(corsOptions));
+app.use(cors());
 
 // Conexión a la base de datos MongoDB
 mongoose.connect(process.env.MONGODB_URI)
