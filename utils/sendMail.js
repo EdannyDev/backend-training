@@ -28,13 +28,13 @@ async function sendMail(user, score) {
 
     const mailOptions = {
       from: `"Nyx-Mentor"`,
-      to: 'recursoshumanos@ultrahogar.net',
+      to: 'edanuc15@gmail.com',
       subject: 'Evaluación Aprobada',
       text: `El usuario ${user.name} con el correo ${user.email} aprobó su evaluación con una calificación de ${score} puntos.`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #ddd; border-radius: 10px; text-align: center;">          
           <h2 style="color: #228b22;">Evaluación Aprobada</h2>
-          <img src="https://res.cloudinary.com/darkdanny25/image/upload/v1741101078/cpc1oj5bzq3t9husc4vd.png" alt="Ultrahogar Logo" style="max-width: 200px; margin-bottom: 20px;">
+          <img src="https://res.cloudinary.com/dsl7stuzv/image/upload/v1756508263/toktsslcqiqrfn04j4db.png" alt="Ultrahogar Logo" style="max-width: 200px; margin-bottom: 20px;">
           <p style="font-size: 16px;">El usuario <strong>${user.name}</strong> con el correo <strong>${user.email}</strong> aprobó su evaluación con una calificación de <strong>${score} puntos</strong>.</p>
           
           <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
