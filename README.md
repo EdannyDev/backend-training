@@ -55,11 +55,11 @@ http://localhost:5000
 ```
 
 ## ✨Endpoints principales
-- Evaluaciones: /api/evaluations
-- FAQs: /api/faqs
-- Progresos de capacitación: /api/progress
-- Material de capacitación: /api/trainings
-- Usuarios: /api/users
+- Evaluaciones: `/api/evaluations`
+- FAQs: `/api/faqs`
+- Progresos de capacitación: `/api/progress`
+- Material de capacitación: `/api/trainings`
+- Usuarios: `/api/users`
 
 ## 🔗Enlaces útiles
 Frontend: https://github.com/EdannyDev/training-app
