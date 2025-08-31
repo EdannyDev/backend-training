@@ -1,4 +1,4 @@
-# 🚀Training App - Backend  
+# 🚀Software de Capacitación - Backend  
 
 ## 📌Descripción  
 Este es el **backend** del sistema de capacitación para el **ERP empresarial**.  
