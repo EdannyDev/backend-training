@@ -1,8 +1,8 @@
 # 🚀Software de Capacitación - Backend  
 
 ## 📌Descripción  
-Este es el **backend** del sistema de capacitación para el **ERP empresarial**.  
-Proporciona las **APIs necesarias** para que el frontend gestione cursos, usuarios, FAQs y evaluaciones.  
+Este es el **backend** del sistema de capacitación para el **ERP empresarial**.
+Este proyecto fue desarrollado como parte de mi **segunda estadía profesional** en la empresa **DIMMMSA**.
 
 **Funcionalidades principales:**  
 - Gestión de usuarios y roles.  
