@@ -62,4 +62,4 @@ http://localhost:5000
 - Usuarios: `/api/users`
 
 ## 🔗Enlaces útiles
-Frontend: https://github.com/EdannyDev/training-app
+Frontend: https://github.com/EdannyDev/frontend-training
