@@ -61,7 +61,7 @@ Evaluation assignments are automatically generated based on user role.
 ```bash
 git clone https://github.com/EdannyDev/backend-training.git  
 npm install  
-npm start
+node server.js
 ```  
 
 ## 🧾 Environment Variables
@@ -69,10 +69,10 @@ npm start
 ```bash
 MONGODB_URI=mongodb://localhost:27017/trainingDB
 PORT=5000
-JWT_SECRET=tu_secreto_jwt
-EMAIL_USER=tu_email
-CLIENT_ID=tu_client_id_google
-CLIENT_SECRET=tu_client_secret_google
-REFRESH_TOKEN=tu_refresh_token_google
+JWT_SECRET=your_secret_jwt
+EMAIL_USER=your_email
+CLIENT_ID=your_client_id_google
+CLIENT_SECRET=your_client_secret_google
+REFRESH_TOKEN=your_refresh_token_google
 FRONTEND_URL=http://localhost:3000
 ```
