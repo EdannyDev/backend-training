@@ -1,40 +1,72 @@
-# 🚀Software de Capacitación - Backend  
+# 🚀 Training Management System – Backend API
 
-## 📌Descripción  
-Este es el **backend** del sistema de capacitación para el **ERP empresarial**.
-Este proyecto fue desarrollado como parte de mi **segunda estadía profesional** en la empresa **DIMMMSA**.
+## 📌 Overview
+Training Management Backend is a RESTful API designed to automate corporate ERP training processes.
 
-**Funcionalidades principales:**  
-- Gestión de usuarios y roles.  
-- Gestión de cursos de capacitación y FAQs.  
-- Asignación automática de evaluaciones según el rol del usuario.  
-- Envío de notificaciones por correo electrónico a los administradores cuando un usuario aprueba una evaluación (incluye puntaje y detalles).  
-- Autenticación segura y manejo de permisos mediante JWT.  
+It manages role-based course assignments, evaluation workflows and approval notifications while enforcing secure authentication and structured access control.
 
-## 🛠️Tecnologías utilizadas  
+The system emphasizes automation, backend structure and enterprise-oriented logic.
 
-- **Node.js**  
-- **Express** (Framework para APIs REST)  
-- **MongoDB / Mongoose** (Base de datos NoSQL y modelado de datos)  
-- **CORS** (para solicitudes desde el frontend)  
-- **JWT** (Autenticación y autorización)  
-- **bcryptjs** (Encriptación de contraseñas)  
-- **crypto** (Generación de tokens y seguridad)  
-- **dotenv** (Variables de entorno)  
-- **Nodemailer + Google APIs** (Envío de correos electrónicos)  
+## 🏗 Architecture
+The application follows a layered structure:
 
-## ⚙️Instalación y ejecución  
+- Routes → Define API endpoints + Handle business logic  
+- Models → MongoDB schemas using Mongoose  
+- Middlewares → Authentication & role validation  
+
+This separation ensures scalability and maintainability.
+
+## 🔐 Authentication & Security
+
+- Password hashing using `bcryptjs`  
+- JWT-based authentication  
+- Role-based authorization middleware  
+- Environment-based configuration using `dotenv`  
+- Controlled CORS setup  
+
+## 👥 Role-Based Logic
+
+Admin  
+- Manage users  
+- Manage training materials  
+- Manage FAQs  
+- Monitor user progress  
+- Receive evaluation approval notifications  
+
+Employee  
+- Access assigned courses  
+- Complete evaluations  
+- Track training progress  
+
+Evaluation assignments are automatically generated based on user role.
+
+## 📦 Core Modules
+
+- Users Management  
+- Training Materials  
+- FAQs Management  
+- Evaluation Engine  
+- Progress Tracking  
+- Email Notification System (Nodemailer + Google OAuth2)
+
+## 🛠 Tech Stack
+`Node.js` · `Express` · `MongoDB` · `Mongoose`  
+
+`JWT` · `bcryptjs` · `dotenv` · `CORS` 
+
+`Nodemailer` · `Google APIs`  
+
+## ⚙️ Local Setup
 
 ```bash
-# 1. Clonar el repositorio
-git clone https://github.com/EdannyDev/backend-training.git
+git clone https://github.com/EdannyDev/backend-training.git  
+npm install  
+npm start
+```  
 
-# 2. Instalar dependencias
-npm install
+## 🧾 Environment Variables
 
-# 3. Configuración de variables de entorno
-Crea un archivo .env en la raíz del proyecto con las siguientes variables:
-
+```bash
 MONGODB_URI=mongodb://localhost:27017/trainingDB
 PORT=5000
 JWT_SECRET=tu_secreto_jwt
@@ -43,23 +75,4 @@ CLIENT_ID=tu_client_id_google
 CLIENT_SECRET=tu_client_secret_google
 REFRESH_TOKEN=tu_refresh_token_google
 FRONTEND_URL=http://localhost:3000
-
-Reemplaza los valores por unos reales
-
-# 4. Ejecutar la aplicación
-npm start
-
-# 5. La API estará disponible en:
-http://localhost:5000
-
 ```
-
-## ✨Endpoints principales
-- Evaluaciones: `/api/evaluations`
-- FAQs: `/api/faqs`
-- Progresos de capacitación: `/api/progress`
-- Material de capacitación: `/api/trainings`
-- Usuarios: `/api/users`
-
-## 🔗Enlaces útiles
-Frontend: https://github.com/EdannyDev/frontend-training
