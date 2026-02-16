@@ -24,7 +24,7 @@ This separation ensures scalability and maintainability.
 - Environment-based configuration using `dotenv`  
 - Controlled CORS setup  
 
-## 👥 Role-Based Logic
+## 👥 Role-Based Access Control (RBAC)
 
 Admin  
 - Manage users  
