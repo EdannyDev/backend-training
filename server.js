@@ -1,0 +1,42 @@
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const evaluationRoutes = require('./routes/evaluation');
+const faqRoutes = require('./routes/faq');
+const progressRoutes = require('./routes/progress');
+const trainingRoutes = require('./routes/training');
+const userRoutes = require('./routes/user');
+
+dotenv.config();
+const app = express();
+
+const corsOptions = {
+  origin: process.env.FRONTEND_URL,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(express.json());
+app.use(cors(corsOptions));
+
+// Conexión a la base de datos MongoDB
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('Conexión a MongoDB exitosa'))
+  .catch(() => console.error('Error al conectar a MongoDB'));
+
+// Ruta inicial del backend
+app.get('/', async (req, res) => {
+  res.json({ message: 'Bienvenido al servidor backend de Skillhub' });
+});
+
+// Rutas de la API
+app.use('/api/evaluations', evaluationRoutes);
+app.use('/api/faqs', faqRoutes);
+app.use('/api/progress', progressRoutes);
+app.use('/api/trainings', trainingRoutes);
+app.use('/api/users', userRoutes);
+
+// Configuración del servidor
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
