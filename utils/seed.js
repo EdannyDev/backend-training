@@ -2,11 +2,16 @@ const mongoose = require('mongoose');
 const Question = require('../models/question');
 require('dotenv').config();
 
+if (!/localhost|127\.0\.0\.1/.test(process.env.MONGODB_URI || '')) {
+  console.error('El seed borra todas las preguntas; solo se permite contra una base local.');
+  process.exit(1);
+}
+
 mongoose.connect(process.env.MONGODB_URI);
 
 const questions = [
     {
-        text: "¿Cuál es la ruta correcta para acceder al módulo de reportes de ventas en Skillhub?",
+        text: "¿Cuál es la ruta correcta para acceder al módulo de reportes de ventas en el ERP?",
         type: "opcion_multiple",
         options: [
             { text: "MENU/CONFIGURACIÓN/REPORTES", correct: false },
@@ -19,7 +24,8 @@ const questions = [
     {
         text: "Para registrar una nueva venta, es obligatorio capturar los datos básicos de contacto del cliente.",
         type: "verdadero_falso",
-        correctAnswer: true
+        correctAnswer: true,
+        roles: ["asesor", "asesorJR"]
     },
     {
         text: "¿Qué dato no es obligatorio al momento de registrar una venta?",
@@ -112,7 +118,7 @@ const questions = [
         roles: ["asesor", "asesorJR"]
     },
     {
-        text: "¿Qué funcionalidad adicional ofrece el módulo de ventas en Skillhub?",
+        text: "¿Qué funcionalidad adicional ofrece el módulo de ventas en el ERP?",
         type: "opcion_multiple",
         options: [
             { text: "Registro de la sucursal desde donde se opera", correct: true },
@@ -140,7 +146,7 @@ const questions = [
         roles: ["asesor", "asesorJR"]
     },
     {
-        text: "¿Dónde puedes cambiar tu contraseña dentro de Skillhub?",
+        text: "¿Dónde puedes cambiar tu contraseña dentro del ERP?",
         type: "opcion_multiple",
         options: [
             { text: "En la sección 'Cambiar contraseña' del menú desplegable", correct: true },
@@ -162,7 +168,7 @@ const questions = [
         roles: ["asesor", "asesorJR", "gerente_sucursal", "gerente_zona"]
     },
     {
-        text: "Para cerrar sesión en Skillhub, debes:",
+        text: "Para cerrar sesión en el ERP, debes:",
         type: "opcion_multiple",
         options: [
             { text: "Hacer clic en 'Cerrar sesión' en el botón superior derecho", correct: true },
@@ -173,7 +179,7 @@ const questions = [
         roles: ["asesor", "asesorJR", "gerente_sucursal", "gerente_zona"]
     },
     {
-        text: "¿Por qué es importante cerrar sesión al terminar de usar Skillhub?",
+        text: "¿Por qué es importante cerrar sesión al terminar de usar el ERP?",
         type: "opcion_multiple",
         options: [
             { text: "Para evitar accesos no autorizados", correct: true },

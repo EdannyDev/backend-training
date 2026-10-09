@@ -4,12 +4,18 @@ const Progress = require('../models/progress');
 const { authenticate, authorizeAdmin } = require('../middlewares/auth');
 const router = express.Router();
 
+const isCloudinaryUrl = (url) => typeof url === 'string' && url.startsWith(`https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/`);
+
 // Crear material (solo admin)
 router.post('/', authenticate, authorizeAdmin, async (req, res) => {
   const { title, description, roles, section, module, submodule, documentUrl, videoUrl, documentName, videoName } = req.body;
 
   if (!documentUrl && !videoUrl) {
     return res.status(400).json({ error: 'Debe subir al menos un archivo (documento o video)' });
+  }
+
+  if ((documentUrl && !isCloudinaryUrl(documentUrl)) || (videoUrl && !isCloudinaryUrl(videoUrl))) {
+    return res.status(400).json({ error: 'URL de archivo no válida.' });
   }
   //Verificar si existe un material con el mismo título, sección y módulo
   try {
@@ -90,6 +96,10 @@ router.put('/:id', authenticate, authorizeAdmin, async (req, res) => {
     return res.status(400).json({ error: 'Debes subir al menos un archivo (documento o video).' });
   }
 
+  if ((documentUrl && !isCloudinaryUrl(documentUrl)) || (videoUrl && !isCloudinaryUrl(videoUrl))) {
+    return res.status(400).json({ error: 'URL de archivo no válida.' });
+  }
+
   try {
     const training = await Training.findById(id);
     if (!training) return res.status(404).json({ error: 'Material de capacitación no encontrado' });
@@ -110,6 +120,9 @@ router.put('/:id', authenticate, authorizeAdmin, async (req, res) => {
     else if (videoUrl) updatedData.video = { fileUrl: videoUrl, originalFileName: videoName };
 
     Object.assign(training, updatedData);
+    if (!training.document?.fileUrl && !training.video?.fileUrl) {
+      return res.status(400).json({ error: 'El material debe conservar al menos un archivo.' });
+    }
     await training.save();
 
     res.json({ message: 'Material de capacitación actualizado', training });

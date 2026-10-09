@@ -2,6 +2,9 @@ require('dotenv').config();
 const nodemailer = require('nodemailer');
 const { google } = require('googleapis');
 
+const escapeHtml = (value) =>
+  String(value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
@@ -35,7 +38,7 @@ async function sendMail(user, score) {
         <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #ddd; border-radius: 10px; text-align: center;">          
           <h2 style="color: #228b22;">Evaluación Aprobada</h2>
           <img src="${process.env.LOGO_URL}" alt="Skillhub Logo" style="max-width: 200px; margin-bottom: 20px;">
-          <p style="font-size: 16px;">El usuario <strong>${user.name}</strong> con el correo <strong>${user.email}</strong> aprobó su evaluación con una calificación de <strong>${score} puntos</strong>.</p>
+          <p style="font-size: 16px;">El usuario <strong>${escapeHtml(user.name)}</strong> con el correo <strong>${escapeHtml(user.email)}</strong> aprobó su evaluación con una calificación de <strong>${score} puntos</strong>.</p>
           
           <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
           
@@ -46,7 +49,7 @@ async function sendMail(user, score) {
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log('Correo enviado:', result);
+    console.log('Correo enviado:', result.messageId);
   } catch (error) {
     console.error('Error al enviar correo:', error);
   }

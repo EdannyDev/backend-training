@@ -6,6 +6,7 @@ const Progress = require('../models/progress');
 const Question = require('../models/question');
 const Training = require('../models/training');
 const User = require('../models/user');
+const shuffle = require('../utils/shuffle');
 
 // Verificar si un usuario tiene acceso a la capacitación
 const hasAccessToTraining = (user, training) => {
@@ -15,15 +16,7 @@ const hasAccessToTraining = (user, training) => {
 // Asignar una evaluación al usuario si ha completado todas sus capacitaciones
 const assignEvaluation = async (userId, role) => {
     try {
-        let existingEvaluation = await Evaluation.findOne({ userId });
-
-        if (existingEvaluation) {
-            if (existingEvaluation.status === 'aprobado') {
-                await Evaluation.deleteOne({ _id: existingEvaluation._id });
-            } else {
-                return;
-            }
-        }
+        if (await Evaluation.exists({ userId })) return;
 
         const questions = await Question.find({ roles: role });
         if (!questions || questions.length === 0) {
@@ -31,16 +24,16 @@ const assignEvaluation = async (userId, role) => {
             return;
         }
 
-        const shuffledQuestions = [...questions].sort(() => Math.random() - 0.5).slice(0, 5);
-        const newEvaluation = new Evaluation({
+        const selectedQuestions = shuffle(questions).slice(0, 5);
+        await Evaluation.create({
             userId,
-            questions: shuffledQuestions.map(q => q._id),
+            questions: selectedQuestions.map(q => q._id),
             score: 0,
             status: 'pendiente'
         });
-        await newEvaluation.save();
     } catch (error) {
-        console.error("Error asignando evaluación:", error);
+        if (error.code === 11000) return;
+        console.error('Error asignando evaluación:', error);
     }
 };
 
@@ -54,7 +47,7 @@ router.get('/all-progress', authenticate, async (req, res) => {
         const allProgress = await Progress.find()
             .populate('userId', 'name role')
             .populate('trainingId', 'title');
-        const filteredProgress = allProgress.filter(progress => progress.userId.role !== 'admin');
+        const filteredProgress = allProgress.filter(progress => progress.userId && progress.trainingId && progress.userId.role !== 'admin');
         const formattedProgress = filteredProgress.reduce((acc, progress) => {
             const { userId, trainingId, totalProgress, status, completed } = progress;
 
@@ -97,7 +90,7 @@ router.get('/all-completed', authenticate, async (req, res) => {
             const requiredTrainings = await Training.find({ roles: user.role });
             const userProgress = await Progress.find({ userId: user._id });
 
-            const allCompleted = requiredTrainings.every(training => 
+            const allCompleted = requiredTrainings.length > 0 && requiredTrainings.every(training => 
                 userProgress.some(progress => 
                     progress.trainingId.equals(training._id) && 
                     progress.status === 'completado' &&
@@ -158,7 +151,7 @@ router.get('/completed/:userId', authenticate, async (req, res) => {
         const requiredTrainings = await Training.find({ roles: user.role });
         const userProgress = await Progress.find({ userId });
 
-        const allCompleted = requiredTrainings.every(training =>
+        const allCompleted = requiredTrainings.length > 0 && requiredTrainings.every(training =>
             userProgress.some(progress => progress.trainingId.equals(training._id) && progress.totalProgress === 100 &&
             progress.completed === true)
         );
@@ -187,29 +180,25 @@ router.post('/start', authenticate, async (req, res) => {
             return res.status(403).json({ error: 'No tienes acceso a esta capacitación.' });
         }
 
-        if (type === 'video' && !training.video.fileUrl) {
+        if (type === 'video' && !training.video?.fileUrl) {
             return res.status(400).json({ error: 'Esta capacitación no tiene material de video.' });
         }
-        if (type === 'document' && !training.document.fileUrl) {
+        if (type === 'document' && !training.document?.fileUrl) {
             return res.status(400).json({ error: 'Esta capacitación no tiene material de documento.' });
         }
 
-        if (type === 'video' && !training.video) {
-            return res.status(400).json({ error: 'La capacitación no está asociada a un material de video.' });
-        }
-
-        if (type === 'document' && !training.document) {
-            return res.status(400).json({ error: 'La capacitación no está asociada a un material de documento.' });
-        }
         const existingProgress = await Progress.findOne({ userId, trainingId });
-        
         if (existingProgress) {
             return res.status(400).json({ error: 'Ya tienes un progreso registrado para esta capacitación.' });
         }
-        const progress = new Progress({ userId, trainingId, type, status: 'cursando' });
+
+        const progress = new Progress({ userId, trainingId, status: 'cursando' });
         await progress.save();
         res.json({ message: 'Capacitación iniciada correctamente' });
     } catch (error) {
+        if (error.code === 11000) {
+            return res.status(400).json({ error: 'Ya tienes un progreso registrado para esta capacitación.' });
+        }
         res.status(500).json({ error: 'Error al iniciar sesión de capacitación' });
     }
 });
@@ -217,11 +206,15 @@ router.post('/start', authenticate, async (req, res) => {
 // Registrar progreso de capacitación
 router.post('/progress', authenticate, async (req, res) => {
     try {
-        const { trainingId, type, progress } = req.body;
+        let { trainingId, type, progress } = req.body;
         const userId = req.user.id;
 
         if (req.user.role === 'admin') {
             return res.status(403).json({ error: 'El administrador no puede registrar su progreso.' });
+        }
+
+        if (!['document', 'video'].includes(type) || typeof progress !== 'number' || !Number.isFinite(progress)) {
+            return res.status(400).json({ error: 'Datos de progreso inválidos.' });
         }
 
         const training = await Training.findById(trainingId);
@@ -233,39 +226,38 @@ router.post('/progress', authenticate, async (req, res) => {
             return res.status(403).json({ error: 'No tienes acceso a esta capacitación.' });
         }
 
-        let session = await Progress.findOne({ userId, trainingId });
-        if (!session) {
-            session = new Progress({ userId, trainingId, type, progress: 0, status: 'cursando', completed: false });
-        }
-
-        if (type === 'video' && !training.video.fileUrl) {
+        if (type === 'video' && !training.video?.fileUrl) {
             return res.status(400).json({ error: 'Esta capacitación no tiene material de video.' });
         }
-
-        if (type === 'document' && !training.document.fileUrl) {
+        if (type === 'document' && !training.document?.fileUrl) {
             return res.status(400).json({ error: 'Esta capacitación no tiene material de documento.' });
         }
 
-        if (type === 'video' && !training.video) {
-            return res.status(400).json({ error: 'La capacitación no está asociada a un material de video.' });
-        }
-
-        if (type === 'document' && !training.document) {
-            return res.status(400).json({ error: 'La capacitación no está asociada a un material de documento.' });
-        }
-
-        if (progress > 100 || progress < 0 || progress < session.progress) {
+        if (progress > 100 || progress < 0) {
             return res.status(400).json({ error: 'Progreso inválido.' });
         }
 
+        let session = await Progress.findOne({ userId, trainingId });
+        if (!session) {
+            session = new Progress({ userId, trainingId, status: 'cursando', completed: false });
+        }
+
+        if (type === 'document') {
+            if (!session.documentStartedAt) session.documentStartedAt = new Date();
+                const elapsedSeconds = (Date.now() - session.documentStartedAt.getTime()) / 1000;
+                const maxAllowed = Math.min(100, ((elapsedSeconds + 15) / 300) * 100);
+            progress = Math.min(progress, maxAllowed);
+        }
+
+        // Math.max garantiza que el progreso nunca retroceda
         if (type === 'document') {
             session.documentProgress = Math.max(session.documentProgress, progress);
-        } else if (type === 'video') {
+        } else {
             session.videoProgress = Math.max(session.videoProgress, progress);
         }
 
-        const hasDocument = Boolean(training.document.fileUrl);
-        const hasVideo = Boolean(training.video.fileUrl);
+        const hasDocument = Boolean(training.document?.fileUrl);
+        const hasVideo = Boolean(training.video?.fileUrl);
 
         if (hasDocument && hasVideo) {
             session.totalProgress = (session.documentProgress / 2) + (session.videoProgress / 2);
@@ -276,10 +268,10 @@ router.post('/progress', authenticate, async (req, res) => {
         }
 
         if (session.totalProgress === 100) {
-            session.status = "completado";
+            session.status = 'completado';
             session.completed = true;
         } else {
-            session.status = "cursando";
+            session.status = 'cursando';
             session.completed = false;
         }
         await session.save();
@@ -287,26 +279,30 @@ router.post('/progress', authenticate, async (req, res) => {
         const requiredTrainings = await Training.find({ roles: req.user.role });
         const userProgress = await Progress.find({ userId });
 
-        const allCompleted = requiredTrainings.every(training => 
-            userProgress.some(progress => 
-                progress.trainingId.equals(training._id) && 
-                progress.status === 'completado' &&
-                progress.totalProgress === 100 &&
-                progress.completed === true
+        const allCompleted = requiredTrainings.length > 0 && requiredTrainings.every(t =>
+            userProgress.some(p =>
+                p.trainingId.equals(t._id) &&
+                p.status === 'completado' &&
+                p.totalProgress === 100 &&
+                p.completed === true
             )
         );
 
         if (allCompleted) {
             await assignEvaluation(userId, req.user.role);
         }
-        res.json({ 
-            message: 'Progreso guardado correctamente',  
-            documentProgress: session.documentProgress, 
+
+        res.json({
+            message: 'Progreso guardado correctamente',
+            documentProgress: session.documentProgress,
             videoProgress: session.videoProgress,
             totalProgress: session.totalProgress,
-            completed: session.completed 
+            completed: session.completed
         });
     } catch (error) {
+        if (error.code === 11000) {
+            return res.status(400).json({ error: 'Ya tienes un progreso registrado para esta capacitación.' });
+        }
         res.status(500).json({ error: 'Error al registrar el progreso' });
     }
 });

@@ -22,7 +22,8 @@ This separation ensures scalability and maintainability.
 - JWT-based authentication  
 - Role-based authorization middleware  
 - Environment-based configuration using `dotenv`  
-- Controlled CORS setup  
+- Controlled CORS setup
+- Helmet security headers and rate limiting on authentication routes
 
 ## 👥 Role-Based Access Control (RBAC)
 
@@ -39,6 +40,7 @@ Employee
 - Track training progress  
 
 Evaluation assignments are automatically generated based on user role.
+New accounts start as `pendiente` (no access to material). HR assigns the role from the admin panel. Roles are never derived from user input.
 
 ## 📦 Core Modules
 
@@ -86,6 +88,7 @@ cp .env.example .env
 | `FRONTEND_URL`   | Frontend origin (used for CORS)                   | `http://localhost:3000`             |
 | `SUPPORT_EMAIL`  | Address that receives evaluation notifications    | `soporte@skillhub-app.com`          |
 | `LOGO_URL`       | Logo image URL used in notification emails        | `your_logo_url`                     |
+| `CLOUDINARY_CLOUD_NAME` | Cloud name of your Cloudinary account (only its URLs are accepted) | `your_cloud_name`                   |
 
 ### Running the Server
 

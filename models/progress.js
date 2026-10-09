@@ -8,7 +8,10 @@ const ProgressSchema = new mongoose.Schema({
   videoProgress: { type: Number, default: 0 },
   totalProgress: { type: Number, default: 0 },
   completed: { type: Boolean, default: false },
+  documentStartedAt: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },
 });
+
+ProgressSchema.index({ userId: 1, trainingId: 1 }, { unique: true });
 
 module.exports = mongoose.model('Progress', ProgressSchema);

@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const EvaluationSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
   questions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }],
   score: { type: Number, required: true },
   status: { type: String, enum: ['pendiente', 'aprobado', 'fallado'], default: 'pendiente' },

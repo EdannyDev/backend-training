@@ -10,12 +10,12 @@ const authenticate = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     if (!mongoose.Types.ObjectId.isValid(decoded.user.id)) {
-      return res.status(400).json({ error: 'ID de usuario no válido.' });
+      return res.status(401).json({ error: 'Sesión no válida. Inicia sesión de nuevo.' });
     }
 
     const user = await User.findById(decoded.user.id);
-    if (!user) return res.status(404).json({ error: 'Usuario no encontrado.' });
-
+    if (!user) return res.status(401).json({ error: 'Sesión no válida. Inicia sesión de nuevo.' });
+    
     req.user = user;
     next();
   } catch (err) {
