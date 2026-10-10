@@ -98,6 +98,11 @@ node server.js
 
 The API will be available at `http://localhost:5000`.
 
+## 🧪 Testing
+`test/evaluation.test.js` is an integration script, not a unit test suite. Start the server with `npm start` in one terminal and run `npm test` in another (Node 18+, requires a running MongoDB). It creates test data and deletes it at the end. Since the system only allows evaluations Monday to Friday, 8:30–18:30 (Mérida time), run it within that window.
+
 ---
+
+> **Note:** this repository's commit history was reset when sensitive data was removed from the original repository.
 
 Frontend: [frontend-training](https://github.com/EdannyDev/frontend-training) · Author: [@EdannyDev](https://github.com/EdannyDev)

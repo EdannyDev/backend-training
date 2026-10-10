@@ -4,7 +4,8 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "start": "node --no-deprecation server.js"
+    "start": "node --no-deprecation server.js",
+    "test": "node test/evaluation.test.js"
   },
   "keywords": [],
   "author": "",
